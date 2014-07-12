@@ -1,0 +1,19 @@
+<ul>
+{% for post in posts %}
+    <li><a href="/{{ post['slug'] }}/">{{ post['title'] }}</li>
+{% else %}
+    <li>No posts found</li>
+{% endfor %}
+</ul>
+
+{% if pagination %}
+    {% if pagination.previous %}
+        <a href="{{url.path}}?page={{pagination.previous}}">Previous</a>
+    {% endif %}
+    {% if pagination.previous and pagination.next %}
+        <span>&nbsp;|&nbsp;</span>
+    {% endif %}
+    {% if pagination.next %}
+        <a href="{{url.path}}?page={{pagination.next}}">Next</a>
+    {% endif %}
+{% endif %}

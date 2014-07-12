@@ -1,0 +1,12 @@
+Jinja2==2.7.3
+MarkupSafe==0.23
+Unidecode==0.04.16
+arrow==0.4.2
+awesome-slugify==1.5
+bottle==0.12.7
+fake-factory==0.4.0
+python-dateutil==2.2
+redis==2.10.1
+regex==2014.06.28
+six==1.7.3
+wsgiref==0.1.2
