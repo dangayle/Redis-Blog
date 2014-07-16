@@ -1,19 +1,29 @@
+{{ site_title }}
+
 <ul>
 {% for post in posts %}
-    <li><a href="/{{ post['slug'] }}/">{{ post['title'] }}</li>
+    <li><a href="/{{ post['slug'] }}/">{{ post['title'] }}</a></li>
 {% else %}
     <li>No posts found</li>
 {% endfor %}
 </ul>
 
-{% if pagination %}
-    {% if pagination.previous %}
+{% block pagination -%}
+{% if pagination -%}
+<div class="pagination">
+    {% if pagination.previous -%}
         <a href="{{url.path}}?page={{pagination.previous}}">Previous</a>
     {% endif %}
-    {% if pagination.previous and pagination.next %}
+    {% if pagination.previous -%}
         <span>&nbsp;|&nbsp;</span>
     {% endif %}
-    {% if pagination.next %}
+    <span>{{ pagination.page }} of {{ pagination.num_pages }}</span>
+    {% if pagination.next -%}
+        <span>&nbsp;|&nbsp;</span>
+    {% endif %}
+    {% if pagination.next -%}
         <a href="{{url.path}}?page={{pagination.next}}">Next</a>
     {% endif %}
+</div>
 {% endif %}
+{% endblock pagination %}

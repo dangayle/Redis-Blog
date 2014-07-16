@@ -1,7 +1,10 @@
+"""Blogging module for bottle.py, using Redis as data store."""
 import sys
+import os
 from math import ceil
 from pprint import pformat
 import bottle
+from bottle import BaseTemplate
 from bottle import jinja2_view as view
 from bottle import jinja2_template as template
 import redis
@@ -12,6 +15,10 @@ from collections import namedtuple
 
 faker = Factory.create()
 db = redis.Redis("localhost")
+# PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
+
+
+BaseTemplate.defaults['site_title'] = "Blog"
 
 
 @bottle.route('/')
@@ -34,6 +41,8 @@ def admin_posts():
 @bottle.route('/admin/posts/new')
 @bottle.route('/admin/posts/new/')
 def admin_posts_new():
+    """Dummy function to create fake data."""
+
     title = faker.catch_phrase()
     data = {
         "id": db.incr('ids:posts'),
@@ -63,13 +72,15 @@ def admin_posts_new():
 @bottle.route('/posts/')
 @bottle.route('/posts')
 def list_posts(page=1, items=10):
+    """List all blog posts, in sets of 10."""
+
     count = db.zcard("content:posts:live")
     query_page = bottle.request.query.page or "1"
     try:
         page = int(query_page) if int(query_page) > 0 else page
     except:
         bottle.abort(404, "Page not found")
-    num_pages = int(ceil(count/float(items)))
+    num_pages = int(ceil(count / float(items)))
     start = page * items - items
     end = start + items - 1
 
@@ -81,9 +92,8 @@ def list_posts(page=1, items=10):
     url = bottle.request.urlparts
 
     pagination = {}
-    for i in ("num_pages","count","page","previous","next"):
+    for i in ("num_pages", "count", "page", "previous", "next"):
         pagination[i] = locals()[i]
-
 
     posts = [db.hgetall(x) for x in db.zrange("content:posts:live", start, end) if x]
     if posts:
@@ -93,8 +103,11 @@ def list_posts(page=1, items=10):
     # return pformat([page,count,num_pages,previous,next, pagination, url])
     # [1, 20, 2, None, 2, {'count': 20, 'next': 2, 'num_pages': 2, 'page': 1, 'previous': None}, SplitResult(scheme='http', netloc='localhost:8080', path='/posts', query='page=1', fragment='')]
 
+
 @bottle.route('/posts/all/')
 def list_all_posts():
+    """List of all blog posts."""
+
     posts = (db.hgetall(x) for x in db.zrange("content:posts", 0, -1))
     # sys.stdout.write(pformat(posts))
     return template("list_posts.html", posts=posts)
@@ -104,6 +117,7 @@ def list_all_posts():
 @bottle.route('/<slug>')
 @bottle.route('/<slug>/')
 def get_post(slug=None):
+    """Get blog post by slug."""
 
     post = db.hgetall("post:{}".format(slug))
 
@@ -114,10 +128,11 @@ def get_post(slug=None):
 
 
 @bottle.route('/static/<filepath:path>')
-def server_static(filepath):
+def serve_static(filepath):
+    """Serve files from static dir."""
     return bottle.static_file(filepath, root='static')
 
 
-bottle.TEMPLATE_PATH.insert(0, '../views/')
+# bottle.TEMPLATE_PATH.insert(0, '../views/')
 bottle.debug(True)
 bottle.run(host='localhost', port=8080, reloader=True)
