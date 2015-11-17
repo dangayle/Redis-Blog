@@ -76,33 +76,40 @@ def admin_posts_new():
 @bottle.route('/')
 @bottle.route('/posts/')
 @bottle.route('/posts')
-def list_posts(page=1, items=10):
+def list_posts(page=1, num_items=10):
     """List all blog posts, in sets of 10."""
 
-    count = db.zcard("content:posts:live")
-    query_page = bottle.request.query.page or "1"
+    url = bottle.request.urlparts
+    page = bottle.request.query.page or 1
+
     try:
-        page = int(query_page) if int(query_page) > 0 else page
+        page = int(page) if int(page) > 0 else 1
     except:
         bottle.abort(404, "Page not found")
-    num_pages = int(ceil(count / float(items)))
-    start = page * items - items
-    end = start + items - 1
 
-    current = page * items
-    previous_page = 0
-    next_page = 0
-    previous_page = page - 1 if page > 1 else None
-    next_page = page + 1 if page < num_pages else None
-    url = bottle.request.urlparts
+    count = db.zcard("content:posts:live")
+    num_pages = int(ceil(count / float(num_items)))
+    start = page * num_items - num_items
+    end = start + num_items - 1
 
-    pagination = {}
-    for i in ("num_pages", "count", "page", "previous_page", "next_page"):
-        pagination[i] = locals()[i]
+    pagination = {
+        'page': page,
+        'count': count,
+        'num_pages': num_pages,
+        'current': page * num_items,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < num_pages else None,
+    }
 
     posts = (db.hgetall(x) for x in db.zrevrange("content:posts:live", start, end) if x)
+
+    context = {}
+    context['posts'] = posts
+    context['pagination'] = pagination
+    context['url'] = url
+
     if posts:
-        return template("list_posts.html", posts=posts, pagination=pagination, url=url)
+        return template("list_posts.html", **context)
     else:
         bottle.abort(404, "Nothing found")
     # return pformat([page,count,num_pages,previous_page,next_page, pagination, url])
