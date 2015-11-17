@@ -1,10 +1,11 @@
 """Blogging module for bottle.py, using Redis as data store."""
 
+import os
 import logging
 from math import ceil
 from pprint import pformat
 import bottle
-from bottle import BaseTemplate
+from bottle import BaseTemplate, Jinja2Template
 from bottle import jinja2_template as template
 import redis
 import arrow
@@ -14,19 +15,19 @@ from slugify import slugify
 log = logging.getLogger(__name__)
 faker = Factory.create()
 db = redis.Redis("localhost")
-# PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
-bottle.TEMPLATE_PATH.insert(0, './views/')
+
+project_path = os.path.realpath(os.path.dirname(__file__))
+template_dir = os.path.join(project_path, 'views')
+bottle.TEMPLATE_PATH.insert(0, template_dir)
+log.debug(template_dir)
 
 
-def sidebar_nav():
-    posts = [db.hgetall(x) for x in db.zrange("content:posts:live", 0, 5)]
-    log.debug(pformat(posts))
-    return posts
 
 
-@bottle.route('/')
-def home():
-    return "Home"
+
+# @bottle.route('/')
+# def home():
+#     return "Home"
 
 
 @bottle.route('/admin')
@@ -72,6 +73,7 @@ def admin_posts_new():
     #     return "failed"
 
 
+@bottle.route('/')
 @bottle.route('/posts/')
 @bottle.route('/posts')
 def list_posts(page=1, items=10):
@@ -98,7 +100,7 @@ def list_posts(page=1, items=10):
     for i in ("num_pages", "count", "page", "previous_page", "next_page"):
         pagination[i] = locals()[i]
 
-    posts = [db.hgetall(x) for x in db.zrange("content:posts:live", start, end) if x]
+    posts = (db.hgetall(x) for x in db.zrevrange("content:posts:live", start, end) if x)
     if posts:
         return template("list_posts.html", posts=posts, pagination=pagination, url=url)
     else:
@@ -110,7 +112,7 @@ def list_posts(page=1, items=10):
 def list_all_posts():
     """List of all blog posts."""
 
-    posts = (db.hgetall(x) for x in db.zrange("content:posts:live", 0, -1))
+    posts = (db.hgetall(x) for x in db.zrevrange("content:posts:live", 0, -1))
     # sys.stdout.write(pformat(posts))
     return template("list_posts.html", posts=posts)
     # return "<pre>{}</pre>".format(pformat(list(posts)))
@@ -135,8 +137,20 @@ def serve_static(filepath):
     return bottle.static_file(filepath, root='static')
 
 
-BaseTemplate.defaults['site_title'] = "Redis Bottle Blog"
-BaseTemplate.defaults['sidebar_nav'] = sidebar_nav
+Jinja2Template.defaults['site_title'] = "Redis Bottle Blog"
+Jinja2Template.settings['filters'] = {}
+
+
+def datetimeformat(value, date_format='dddd, MMM D, YYYY'):
+    t = arrow.get(value)
+    return t.format(date_format)
+Jinja2Template.settings['filters']['datetimeformat'] = datetimeformat
+
+
+def sidebar_nav():
+    posts = [db.hgetall(x) for x in db.zrevrange("content:posts:live", 0, 5)]
+    return posts
+Jinja2Template.defaults['sidebar_nav'] = sidebar_nav
 
 
 bottle.debug(True)

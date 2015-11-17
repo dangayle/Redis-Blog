@@ -2,6 +2,7 @@
 {% block body %}
 
 <h1>{{post['title']}}</h1>
+<div><p>{{ post['published']|datetimeformat }}</p></div>
 <div>{{post['content']}}</div>
 
 {% endblock body %}
