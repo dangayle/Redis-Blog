@@ -1,4 +1,5 @@
-{{ site_title }}
+{% extends "base.html" %}
+{% block body %}
 
 <ul>
 {% for post in posts %}
@@ -11,19 +12,20 @@
 {% block pagination -%}
 {% if pagination -%}
 <div class="pagination">
-    {% if pagination.previous -%}
-        <a href="{{url.path}}?page={{pagination.previous}}">Previous</a>
+    {% if pagination.previous_page -%}
+        <a href="{{url.path}}?page={{pagination.previous_page}}">Previous</a>
     {% endif %}
-    {% if pagination.previous -%}
+    {% if pagination.previous_page -%}
         <span>&nbsp;|&nbsp;</span>
     {% endif %}
     <span>{{ pagination.page }} of {{ pagination.num_pages }}</span>
-    {% if pagination.next -%}
+    {% if pagination.next_page -%}
         <span>&nbsp;|&nbsp;</span>
     {% endif %}
-    {% if pagination.next -%}
-        <a href="{{url.path}}?page={{pagination.next}}">Next</a>
+    {% if pagination.next_page -%}
+        <a href="{{url.path}}?page={{pagination.next_page}}">Next</a>
     {% endif %}
 </div>
 {% endif %}
 {% endblock pagination %}
+{% endblock body %}

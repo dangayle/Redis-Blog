@@ -1,24 +1,27 @@
 """Blogging module for bottle.py, using Redis as data store."""
-import sys
-import os
+
+import logging
 from math import ceil
 from pprint import pformat
 import bottle
 from bottle import BaseTemplate
-from bottle import jinja2_view as view
 from bottle import jinja2_template as template
 import redis
 import arrow
 from faker import Factory
 from slugify import slugify
-from collections import namedtuple
 
+log = logging.getLogger(__name__)
 faker = Factory.create()
 db = redis.Redis("localhost")
 # PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
+bottle.TEMPLATE_PATH.insert(0, './views/')
 
 
-BaseTemplate.defaults['site_title'] = "Blog"
+def sidebar_nav():
+    posts = [db.hgetall(x) for x in db.zrange("content:posts:live", 0, 5)]
+    log.debug(pformat(posts))
+    return posts
 
 
 @bottle.route('/')
@@ -85,14 +88,14 @@ def list_posts(page=1, items=10):
     end = start + items - 1
 
     current = page * items
-    previous = 0
-    next = 0
-    previous = page - 1 if page > 1 else None
-    next = page + 1 if page < num_pages else None
+    previous_page = 0
+    next_page = 0
+    previous_page = page - 1 if page > 1 else None
+    next_page = page + 1 if page < num_pages else None
     url = bottle.request.urlparts
 
     pagination = {}
-    for i in ("num_pages", "count", "page", "previous", "next"):
+    for i in ("num_pages", "count", "page", "previous_page", "next_page"):
         pagination[i] = locals()[i]
 
     posts = [db.hgetall(x) for x in db.zrange("content:posts:live", start, end) if x]
@@ -100,15 +103,14 @@ def list_posts(page=1, items=10):
         return template("list_posts.html", posts=posts, pagination=pagination, url=url)
     else:
         bottle.abort(404, "Nothing found")
-    # return pformat([page,count,num_pages,previous,next, pagination, url])
-    # [1, 20, 2, None, 2, {'count': 20, 'next': 2, 'num_pages': 2, 'page': 1, 'previous': None}, SplitResult(scheme='http', netloc='localhost:8080', path='/posts', query='page=1', fragment='')]
+    # return pformat([page,count,num_pages,previous_page,next_page, pagination, url])
 
 
 @bottle.route('/posts/all/')
 def list_all_posts():
     """List of all blog posts."""
 
-    posts = (db.hgetall(x) for x in db.zrange("content:posts", 0, -1))
+    posts = (db.hgetall(x) for x in db.zrange("content:posts:live", 0, -1))
     # sys.stdout.write(pformat(posts))
     return template("list_posts.html", posts=posts)
     # return "<pre>{}</pre>".format(pformat(list(posts)))
@@ -124,7 +126,7 @@ def get_post(slug=None):
     if not post:
         bottle.abort(404, "Nothing found")
 
-    return template("<h1>{{post['title']}}</h1>\n<div>{{post['content']}}</div>", post=post)
+    return template("post_detail.html", post=post)
 
 
 @bottle.route('/static/<filepath:path>')
@@ -133,6 +135,9 @@ def serve_static(filepath):
     return bottle.static_file(filepath, root='static')
 
 
-# bottle.TEMPLATE_PATH.insert(0, '../views/')
+BaseTemplate.defaults['site_title'] = "Redis Bottle Blog"
+BaseTemplate.defaults['sidebar_nav'] = sidebar_nav
+
+
 bottle.debug(True)
 bottle.run(host='localhost', port=8080, reloader=True)

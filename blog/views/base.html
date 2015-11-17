@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags always come first -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.rawgit.com/twbs/bootstrap/v4-dev/dist/css/bootstrap.css">
+  </head>
+  <body>
+  <nav class="navbar navbar-dark bg-inverse m-b-md">
+      <a class="navbar-brand" href="/">Redis Bottle Blog</a>
+      <ul class="nav navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="/posts/">Posts</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/posts/all/">All Posts</a>
+        </li>
+      </ul>
+  </nav>
+
+  <div class="container">
+    <div class="col-sm-4 col-sm-push-8">
+    <nav>
+      <ul class="list-unstyled">
+      {% for post in sidebar_nav() %}
+        <li><a href="/{{ post['slug'] }}/">{{ post['title'] }}</a></li>
+      {% endfor %}
+      </ul>
+    </nav>
+    </div>
+    <div class="col-sm-8 col-sm-pull-4">
+      {% block body %}
+      {% endblock body %}
+    </div>
+  </div>
+    <!-- jQuery first, then Bootstrap JS. -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://cdn.rawgit.com/twbs/bootstrap/v4-dev/dist/js/bootstrap.js"></script>
+  </body>
+</html>
